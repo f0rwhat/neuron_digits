@@ -24,19 +24,19 @@ public:
             m_bitMap(cell_i, cell_j) = enable;
             if (cell_j > 0 and m_bitMap(cell_i, cell_j - 1) == 0)
             {
-                m_bitMap(cell_i, cell_j - 1) = 0.5;
+                m_bitMap(cell_i, cell_j - 1) = 0.8;
             }
             if (cell_i > 0 and m_bitMap(cell_i - 1, cell_j) == 0)
             {
-                m_bitMap(cell_i - 1, cell_j) = 0.5;
+                m_bitMap(cell_i - 1, cell_j) = 0.8;
             }
             if (cell_j < m_columns - 1 and m_bitMap(cell_i, cell_j + 1) == 0)
             {
-                m_bitMap(cell_i , cell_j + 1) = 0.5;
+                m_bitMap(cell_i , cell_j + 1) = 0.8;
             }
             if (cell_i < m_rows - 1 and m_bitMap(cell_i + 1, cell_j) == 0)
             {
-                m_bitMap(cell_i + 1, cell_j) = 0.5;
+                m_bitMap(cell_i + 1, cell_j) = 0.8;
             }
         }
     }

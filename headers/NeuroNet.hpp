@@ -17,9 +17,20 @@ public:
         , m_layers_sizes(layers_sizes)
     {
         _rebuild(default_weights);
+
+        for (auto& layer : m_weights)
+        {
+            for (int i = 0; i < layer.size().first; i++)
+            {
+                for (int j = 0; j < layer.size().second; j++)
+                {
+                    layer(i, j) = ((rand() % 50)) * 0.06 / (layer.size().first + 15);
+                }
+            }
+        }
     }
 
-    std::vector<double> analyze(const std::vector<double>& input)
+    double analyze(const std::vector<double>& input)
     {
         if (input.size() != m_layers_sizes.at(0))
             throw std::runtime_error("Input data size doesn't match the actual input layer size (" + std::to_string(input.size()) + " != " + std::to_string(m_layers_sizes.at(0)) + ").");
@@ -28,59 +39,59 @@ public:
 
         for(int layer = 0; layer < m_layers_sizes.size() - 1; ++layer)
         {
-            m_sum_layers[layer] = m_weights[layer] * m_neurons_layers[layer] + m_bioses[layer];
+            m_neurons_layers[layer + 1] = m_weights[layer] * m_neurons_layers[layer];
+            m_neurons_layers[layer + 1] = m_neurons_layers[layer + 1] + m_bioses[layer];
 
-            m_neurons_layers[layer + 1] = m_activator->func(m_sum_layers[layer]);
+            m_neurons_layers[layer + 1] = m_activator->func(m_neurons_layers[layer + 1]);
         }
-
-        // check_for_nan();
 
         const auto outputLayerNum = m_layers_sizes.size() - 1;
-        std::vector<double> result;
+        double max = -__DBL_MAX__;
+        int max_answer = -1;
         for (int i = 0; i < m_neurons_layers.at(outputLayerNum).size().first; i++)
         {
-            result.push_back(m_neurons_layers.at(outputLayerNum)(i, 0));
+            if (m_neurons_layers.at(outputLayerNum)(i, 0) > max)
+            {
+                max = m_neurons_layers.at(outputLayerNum)(i, 0);
+                max_answer = i;
+            } 
         }
-        return result;
+        return max_answer;
     }
 
     void back_propagate(int reference, double study_coef = 1)
     {
         const int outputLayerNum = m_layers_sizes.size() - 1;
-        Matrix sigmas = Matrix(m_layers_sizes.at(outputLayerNum), 1);
-        for (int i = 0; i < sigmas.size().first; i++)
+        for (int i = 0; i < m_layers_sizes.at(outputLayerNum); i++)
         {
             double d = i == reference ? 1 : 0;
-            sigmas(i, 0) = -2 * (d - m_neurons_layers.at(outputLayerNum)(i, 0)) * m_activator->derivative_func(m_sum_layers.at(outputLayerNum - 1)(i,0));
+            m_sigmas.at(outputLayerNum)(i, 0) = (d - m_neurons_layers.at(outputLayerNum)(i, 0)) * m_activator->derivative_func(m_neurons_layers.at(outputLayerNum)(i,0));
         }
 
-        for (int layer = outputLayerNum - 1; layer >= 0; layer--)
-        {
-            Matrix weights_deltas(m_weights.at(layer).size().first, m_weights.at(layer).size().second);
-            
+        for (int layer = outputLayerNum - 1; layer > 0; layer--)
+        {         
+            auto transponated = Matrix::transponate(m_weights.at(layer));
+            m_sigmas[layer] = transponated * m_sigmas[layer + 1];
+
+            for(auto i = 0; i < m_layers_sizes.at(layer); i++)
+            {
+                m_sigmas[layer](i, 0) *= m_activator->derivative_func(m_neurons_layers.at(layer)(i, 0));
+            }
+        }
+
+        for (int layer = 0; layer < outputLayerNum; layer++)
+        {            
             for (int i = 0; i < m_weights.at(layer).size().first; i++)
             {
                 for (int j = 0; j < m_weights.at(layer).size().second; j++)
                 {
-                    weights_deltas(i, j) = sigmas(i, 0) * m_neurons_layers.at(layer)(j, 0);
+                    m_weights[layer](i, j) += m_neurons_layers.at(layer)(j, 0) * m_sigmas[layer + 1](i, 0) * study_coef;
                 }
             }
 
-            m_bioses[layer] = m_bioses[layer] - sigmas;// * study_coef;
-
-            if (layer > 0)
-            {                
-                sigmas = Matrix::transponate(m_weights.at(layer)) * sigmas;
-
-                for(auto i = 0; i < m_sum_layers.at(layer).size().first; i++)
-                {
-                    sigmas(i, 0) *= m_activator->derivative_func(m_sum_layers.at(layer)(i, 0));
-                }
-            }
-
-            // auto temp = weights_deltas * study_coef;
-            m_weights[layer] = m_weights[layer] - weights_deltas;
+            m_bioses[layer] = m_bioses[layer] + m_sigmas[layer + 1] * study_coef;
         }
+
         // check_for_nan();
     }
     
@@ -220,17 +231,18 @@ private:
     void _rebuild(double default_weights = 0.5)
     {
         m_neurons_layers.clear();
-        m_sum_layers.clear();
+        m_sigmas.clear();
         m_weights.clear();
         m_bioses.clear();
 
         for (int i = 0; i < m_layers_sizes.size(); i++)
         {
             m_neurons_layers.push_back(Matrix(m_layers_sizes.at(i), 1));
+            m_sigmas.push_back(Matrix(m_layers_sizes.at(i), 1));
 
             if (i < m_layers_sizes.size() - 1)
             {
-                m_sum_layers.push_back(Matrix(m_layers_sizes.at(i + 1), 1));
+                // m_sum_layers.push_back(Matrix(m_layers_sizes.at(i + 1), 1));
                 m_weights.push_back(Matrix(m_layers_sizes.at(i + 1), m_layers_sizes.at(i), default_weights));
                 m_bioses.push_back(Matrix(m_layers_sizes.at(i + 1), 1, default_weights));
             }
@@ -240,7 +252,7 @@ private:
 private:
     std::unique_ptr<IActivatorFunc> m_activator;
     std::vector<unsigned int> m_layers_sizes;
-    std::vector<Matrix> m_sum_layers;
+    std::vector<Matrix> m_sigmas;
     std::vector<Matrix> m_neurons_layers;
     std::vector<Matrix> m_weights;
     std::vector<Matrix> m_bioses;

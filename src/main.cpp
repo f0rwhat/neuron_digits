@@ -47,66 +47,58 @@ void teach(std::shared_ptr<NeuroNet<T>> neuroNet, double percentToEnd = 0.95)
     }
     std::cout << "Teach data was read, starting learning process..." << std::endl;
 
-    int epoch = 0;
     int good = 0;
     int total = 0;
     auto start_point = std::chrono::system_clock::now();
     double rate = 0;
 
     int learn_data_iterator = 0;
-    while (epoch < 20 and rate < 0.9)
+    double epoch = 0;
+    const double epoches = 100;
+    while (epoch < epoches and rate < 0.98)
     {
         const auto& data = teach_data.at(learn_data_iterator);
         learn_data_iterator++;
         learn_data_iterator = learn_data_iterator < teach_data.size() ? learn_data_iterator : 0;
 
 
-        const auto result = neuroNet->analyze(data.second);
+        const auto answer = neuroNet->analyze(data.second);
 
-        int max = INT32_MIN;
-        int max_answer = -1;
-        for(int i = 0; i < result.size(); i++)
+        if (answer == data.first)
         {
-            if (result[i] > max)
-            {
-                max = result[i];
-                max_answer = i;
-            } 
-        }
-        if (max_answer == data.first)
-        {
-            // std::cout << "Got correct answer on " << total  << " input!" << std::endl;
             good++;
         }
         else
         {
-            neuroNet->back_propagate(data.first, 1 * exp(-epoch / 20));
+            neuroNet->back_propagate(data.first, 0.1 * exp(-epoch / epoches));
         }
         total++;
 
-        if (total > 0 and total % 100 == 0)
+        // if (total > 0 and total % 100 == 0)
+        // {
+        //     auto point_diff = std::chrono::system_clock::now() - start_point;
+        //     auto time_spent_s = std::chrono::duration_cast<std::chrono::seconds>(point_diff);
+        //     auto time_spent_m = std::chrono::duration_cast<std::chrono::minutes>(point_diff);
+        //     std::cout << "Time spent: " << time_spent_m.count() << "m " << time_spent_s.count() % 60 << "s; Epoch: " << epoch  << "; Good: " << good << "; Total: " << total << "; Rate: " << good/static_cast<double>(total) << ";" << std::endl;
+        // }
+
+        if (total % 10000 == 0)
         {
             auto point_diff = std::chrono::system_clock::now() - start_point;
             auto time_spent_s = std::chrono::duration_cast<std::chrono::seconds>(point_diff);
             auto time_spent_m = std::chrono::duration_cast<std::chrono::minutes>(point_diff);
             std::cout << "Time spent: " << time_spent_m.count() << "m " << time_spent_s.count() % 60 << "s; Epoch: " << epoch  << "; Good: " << good << "; Total: " << total << "; Rate: " << good/static_cast<double>(total) << ";" << std::endl;
-            neuroNet->check_for_nan();
-        }
-
-        if (total % 10000 == 0)
-        {
             epoch++;
             total = 0;
             good = 0;
-            // total = 0;
         }
     }
 
     std::cout << "Teaching ended." << std::endl;
-    auto point_diff = std::chrono::system_clock::now() - start_point;
-    auto time_spent_s = std::chrono::duration_cast<std::chrono::seconds>(point_diff);
-    auto time_spent_m = std::chrono::duration_cast<std::chrono::minutes>(point_diff);
-    std::cout << "Time spent: " << time_spent_m.count() << "m " << time_spent_s.count() / 60 << "s; Epoch: " << epoch  << "; Good: " << good << "; Total: " << total << "; Rate: " << good/static_cast<double>(total) << ";" << std::endl;
+    // auto point_diff = std::chrono::system_clock::now() - start_point;
+    // auto time_spent_s = std::chrono::duration_cast<std::chrono::seconds>(point_diff);
+    // auto time_spent_m = std::chrono::duration_cast<std::chrono::minutes>(point_diff);
+    // std::cout << "Time spent: " << time_spent_m.count() << "m " << time_spent_s.count() / 60 << "s; Epoch: " << epoch  << "; Good: " << good << "; Total: " << total << "; Rate: " << good/static_cast<double>(total) << ";" << std::endl;
 }
 
 void main_loop(int)
@@ -119,14 +111,14 @@ void main_loop(int)
 
 int main(int argc, char** argv)
 {
-    // window = std::make_shared<RenderWindow>(WINDOW_WIDTH, WINDOW_HEIGHT, "Neuron");
-    // window->init();
+    window = std::make_shared<RenderWindow>(WINDOW_WIDTH, WINDOW_HEIGHT, "Neuron");
+    window->init();
 
     std::shared_ptr<BitMap> bitMap = std::make_shared<BitMap>(ROWS, COLUMNS, BLOCK_SIZE);
     std::shared_ptr<NeuroNet<ModReluFunc>> neuroNet = std::make_shared<NeuroNet<ModReluFunc>>(std::vector<unsigned int>{784, 256, 10}, 0.5);
     neuroNet->read_weights("weights.txt");
-    teach(neuroNet);
-    neuroNet->save_weights("weights.txt");
+    // teach(neuroNet);
+    // neuroNet->save_weights("weights.txt");
 
     window->addObject(bitMap);
 
@@ -144,10 +136,8 @@ int main(int argc, char** argv)
         const auto result = neuroNet->analyze(data);
 
         std::cout << "=========================" << std::endl;
-        for (int i = 0; i < 10; i++)
-        {
-            std::cout << "Its " << i << " : " << result.at(i) << std::endl;
-        }
+        
+        std::cout << "Its " << result;
     };
 
     static std::function<void(int, int)> mouseMove_bounce = [&] (int x, int y) {
