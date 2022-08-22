@@ -8,15 +8,15 @@
 #include "IActivatorFunc.hpp"
 #include "Matrix.hpp"
 
-template <typename ActivatorFunc>
+
 class NeuroNet
 {
 public:
-    NeuroNet(const std::vector<unsigned int>& layers_sizes, double default_weights)
-        : m_activator(std::make_unique<ActivatorFunc>())
+    NeuroNet(const std::vector<unsigned int>& layers_sizes, std::weak_ptr<IActivatorFunc> activator_func)
+        : m_activator(activator_func)
         , m_layers_sizes(layers_sizes)
     {
-        _rebuild(default_weights);
+        _rebuild();
 
         for (auto& layer : m_weights)
         {
@@ -35,6 +35,10 @@ public:
         if (input.size() != m_layers_sizes.at(0))
             throw std::runtime_error("Input data size doesn't match the actual input layer size (" + std::to_string(input.size()) + " != " + std::to_string(m_layers_sizes.at(0)) + ").");
 
+        const auto activator = m_activator.lock();
+        if (not activator)
+            throw std::runtime_error("Activator func is nulptr.");
+
         m_neurons_layers[0] = input;
 
         for(int layer = 0; layer < m_layers_sizes.size() - 1; ++layer)
@@ -42,7 +46,7 @@ public:
             m_neurons_layers[layer + 1] = m_weights[layer] * m_neurons_layers[layer];
             m_neurons_layers[layer + 1] = m_neurons_layers[layer + 1] + m_bioses[layer];
 
-            m_neurons_layers[layer + 1] = m_activator->func(m_neurons_layers[layer + 1]);
+            m_neurons_layers[layer + 1] = activator->func(m_neurons_layers[layer + 1]);
         }
 
         const auto outputLayerNum = m_layers_sizes.size() - 1;
@@ -61,11 +65,15 @@ public:
 
     void back_propagate(int reference, double study_coef = 1)
     {
+        const auto activator = m_activator.lock();
+        if (not activator)
+            throw std::runtime_error("Activator func is nulptr.");
+
         const int outputLayerNum = m_layers_sizes.size() - 1;
         for (int i = 0; i < m_layers_sizes.at(outputLayerNum); i++)
         {
             double d = i == reference ? 1 : 0;
-            m_sigmas.at(outputLayerNum)(i, 0) = (d - m_neurons_layers.at(outputLayerNum)(i, 0)) * m_activator->derivative_func(m_neurons_layers.at(outputLayerNum)(i,0));
+            m_sigmas.at(outputLayerNum)(i, 0) = (d - m_neurons_layers.at(outputLayerNum)(i, 0)) * activator->derivative_func(m_neurons_layers.at(outputLayerNum)(i,0));
         }
 
         for (int layer = outputLayerNum - 1; layer > 0; layer--)
@@ -75,7 +83,7 @@ public:
 
             for(auto i = 0; i < m_layers_sizes.at(layer); i++)
             {
-                m_sigmas[layer](i, 0) *= m_activator->derivative_func(m_neurons_layers.at(layer)(i, 0));
+                m_sigmas[layer](i, 0) *= activator->derivative_func(m_neurons_layers.at(layer)(i, 0));
             }
         }
 
@@ -250,7 +258,7 @@ private:
     }
 
 private:
-    std::unique_ptr<IActivatorFunc> m_activator;
+    std::weak_ptr<IActivatorFunc> m_activator;
     std::vector<unsigned int> m_layers_sizes;
     std::vector<Matrix> m_sigmas;
     std::vector<Matrix> m_neurons_layers;

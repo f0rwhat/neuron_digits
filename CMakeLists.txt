@@ -7,6 +7,7 @@ find_package(GLUT REQUIRED)
 set(HEADERS
     headers/activators/IActivatorFunc.hpp
     headers/activators/ModReluFunc.hpp
+    headers/activators/SigmoidFunc.hpp
     
     headers/IRenderable.hpp
     headers/RenderWindow.hpp
