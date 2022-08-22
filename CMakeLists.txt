@@ -33,12 +33,16 @@ include_directories(${PROJECT_NAME}
     ${GLUT_INCLUDE_DIRS} 
 )
 
+add_subdirectory(libs/Catch2)
+
 target_link_libraries(${PROJECT_NAME} 
     pthread
-    
+
     ${OPENGL_LIBRARIES}
     ${GLUT_LIBRARY}
 )
+
+add_subdirectory(tests/)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

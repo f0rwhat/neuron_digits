@@ -11,19 +11,31 @@ public:
     using MatrixSize = std::pair<Rows, Cols>;
 
     Matrix(unsigned int rows, unsigned int cols, double default_values = 0)
-        : m_rows(rows)
-        , m_cols(cols)
     {
-        m_matrix.resize(m_rows);
-        // m_matrix = new double*[m_rows];
-        for (int i = 0; i < m_rows; i++)
+        _resize(rows, cols, default_values);
+    }
+
+    Matrix(const std::vector<double>& lhl)
+    {
+        _resize(lhl.size(), 1);
+        
+        for (int i = 0; i < lhl.size(); i++)
         {
-            m_matrix[i].resize(m_cols, default_values);
-            // m_matrix[i] = new double[m_cols];
-            // for (int j = 0; j < m_cols; j++)
-            // {
-            //     m_matrix[i][j] = default_values;
-            // }
+            this->operator()(i, 0) = lhl.at(i);
+        }
+    }
+
+    Matrix(const Matrix& lhl)
+    {
+        const auto lhl_size = lhl.size();
+        _resize(lhl_size.first, lhl_size.second);
+        
+        for (int i = 0; i < lhl_size.first; i++)
+        {
+            for (int j = 0; j < lhl_size.second; j++)
+            {
+                this->operator()(i, j) = lhl(i, j);
+            }
         }
     }
     
@@ -60,7 +72,7 @@ public:
 
     double& operator()(unsigned int i, unsigned int j)
     {
-        if (i >= m_rows or j >= m_cols or i < 0 or j < 0)
+        if (i >= m_rows or j >= m_cols)
             throw std::runtime_error("Matrix::operator() out of bounds.");
 
         return m_matrix[i][j];
@@ -68,7 +80,7 @@ public:
 
     const double& operator()(unsigned int i, unsigned int j) const
     {
-        if (i >= m_rows or j >= m_cols or i < 0 or j < 0)
+        if (i >= m_rows or j >= m_cols)
             throw std::runtime_error("Matrix::operator() out of bounds.");
 
         return m_matrix[i][j];
@@ -118,7 +130,7 @@ public:
         
         for (int i = 0; i < lhl.size(); i++)
         {
-            m_matrix[i][0] = lhl.at(i);
+            this->operator()(i, 0) = lhl.at(i);
         }
 
         return *this;
@@ -132,7 +144,7 @@ public:
         {
             for (int j = 0; j < m_cols; j++)
             {
-                m_matrix[i][j] = lhl(i, j);
+                this->operator()(i, j) = lhl(i, j);
             }
         }
 
@@ -149,7 +161,7 @@ public:
         {
             for (int j = 0; j < result.size().second; j++)
             {
-                result(i, j) = m_matrix[i][j] + lhl(i, j);
+                result(i, j) = this->operator()(i, j) + lhl(i, j);
             }
         }
 
@@ -166,7 +178,7 @@ public:
         {
             for (int j = 0; j < result.size().second; j++)
             {
-                result(i, j) = m_matrix[i][j] - lhl(i, j);
+                result(i, j) = this->operator()(i, j) - lhl(i, j);
             }
         }
 
@@ -181,28 +193,24 @@ public:
         Matrix result(m_rows, m_cols);
         for (int i = 0; i < result.size().first; i++)
         {
-            result(i, 0) = m_matrix[i][0] - lhl.at(i);
+            result(i, 0) = this->operator()(i, 0)- lhl.at(i);
         }
 
         return result;
     }
 
 private:
-    void _resize(unsigned int rows, unsigned int cols)
+    void _resize(unsigned int rows, unsigned int cols, double default_values = 0)
     {
         m_matrix.clear();
 
         m_rows = rows;
         m_cols = cols;
 
-        m_matrix.resize(m_rows);// = new double*[m_rows];
+        m_matrix.resize(m_rows);
         for (int i = 0; i < m_rows; i++)
         {
-            m_matrix[i].resize(m_cols, 0);// = new double[m_cols];
-            // for (int j = 0; j < m_cols; j++)
-            // {
-            //     m_matrix[i][j] = 0;
-            // }
+            m_matrix[i].resize(m_cols, default_values);
         }
     }
 
@@ -210,5 +218,5 @@ private:
     unsigned int m_rows;
     unsigned int m_cols;
 
-    std::vector<std::vector<double>> m_matrix; // = nullptr;
+    std::vector<std::vector<double>> m_matrix;
 };

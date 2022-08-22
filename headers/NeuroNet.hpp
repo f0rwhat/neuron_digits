@@ -26,11 +26,11 @@ public:
 
         m_neurons_layers[0] = input;
 
-        for(int layer = 1; layer < m_layers_sizes.size() - 1; ++layer)
+        for(int layer = 0; layer < m_layers_sizes.size() - 1; ++layer)
         {
-            m_sum_layers[layer] = m_weights[layer - 1] * m_neurons_layers[layer - 1] + m_bioses[layer - 1];
+            m_sum_layers[layer] = m_weights[layer] * m_neurons_layers[layer] + m_bioses[layer];
 
-            m_neurons_layers[layer] = m_activator->func(m_sum_layers[layer - 1]);
+            m_neurons_layers[layer + 1] = m_activator->func(m_sum_layers[layer]);
         }
 
         // check_for_nan();
