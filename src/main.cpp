@@ -26,7 +26,7 @@ bool isMousePressed = false;
 
 std::shared_ptr<RenderWindow> window;
 
-void teach(std::shared_ptr<NeuroNet> neuroNet, unsigned int epoches, double percentToEnd = 0.95)
+void teach(std::shared_ptr<NeuroNet> neuroNet, unsigned int epoches, double percentToEnd = 0.97)
 {
     std::ifstream input("lib_10k.txt");
 
@@ -73,12 +73,14 @@ void teach(std::shared_ptr<NeuroNet> neuroNet, unsigned int epoches, double perc
         }
         total++;
 
+        rate = good / static_cast<double>(total);
+
         if (total % 10000 == 0)
         {
             auto point_diff = std::chrono::system_clock::now() - start_point;
             auto time_spent_s = std::chrono::duration_cast<std::chrono::seconds>(point_diff);
             auto time_spent_m = std::chrono::duration_cast<std::chrono::minutes>(point_diff);
-            std::cout << "Time spent: " << time_spent_m.count() << "m " << time_spent_s.count() % 60 << "s; Epoch: " << epoch  << "; Good: " << good << "; Total: " << total << "; Rate: " << good/static_cast<double>(total) << ";" << std::endl;
+            std::cout << "Time spent: " << time_spent_m.count() << "m " << time_spent_s.count() % 60 << "s; Epoch: " << epoch  << "; Good: " << good << "; Total: " << total << "; Rate: " << rate << ";" << std::endl;
             epoch++;
             total = 0;
             good = 0;
