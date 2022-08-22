@@ -171,21 +171,21 @@ int main(int argc, char** argv)
             std::cin >> in;
             teach(neuroNet, in);
             neuroNet->save_weights("weights.txt");
-        }
-        std::cout << "Repeat?" << std::endl;
-        std::cout << "1. Yes" << std::endl;
-        std::cout << "2. No" << std::endl;
-        in = 0;
-        while (in != 1 and in != 2)
-        {
-            std::cin >> in;
-            if (in != 1 and in != 2)
+            std::cout << "Repeat?" << std::endl;
+            std::cout << "1. Yes" << std::endl;
+            std::cout << "2. No" << std::endl;
+            in = 0;
+            while (in != 1 and in != 2)
             {
-                std::cout << "Incorrect input! Try again." << std::endl;
+                std::cin >> in;
+                if (in != 1 and in != 2)
+                {
+                    std::cout << "Incorrect input! Try again." << std::endl;
+                }
             }
+            if (in == 2)
+                break;
         }
-        if (in == 2)
-            break;
     }
 
     std::shared_ptr<BitMap> bitMap = std::make_shared<BitMap>(ROWS, COLUMNS, BLOCK_SIZE);
@@ -220,7 +220,6 @@ int main(int argc, char** argv)
                 const auto y_index = y / BLOCK_SIZE;
 
                 bitMap->enable(y_index, x_index, true);
-                analyze();
             }
         }
     };
